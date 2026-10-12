@@ -1,0 +1,52 @@
+Slide 1: Title Slide
+Title: Traffic Flow Prediction Using Pretrained AI
+Subtitle: Real-time Computer Vision, Tracking, and Forecasting
+Using YOLOv8, ByteTrack, and Holt's Trend
+
+Slide 2: Computer Vision Pipeline
+Title: Computer Vision Pipeline
+Subtitle: Real-time frame processing from actual video footage
+- OpenCV VideoCapture: Efficient frame-by-frame extraction
+- YOLO (yolo26s.pt): High-accuracy pretrained vehicle detection
+- ByteTrack: Persistent multi-object tracking IDs
+- Real-time AI annotation directly on the live frames
+
+Slide 3: Bidirectional Geometric Counting
+Title: Bidirectional Geometric Counting
+Subtitle: Accurate vehicle counting and direction assignment
+- Configurable Counting Line: Adjustable via UI slider
+- Vector Math (Cross Product): Determines line crossings geometrically
+- Direction Tracking: Distinguishes Forward vs Reverse flow
+- Duplicate Prevention: Prevents multiple counts for slow vehicles
+
+Slide 4: Empirical Time-Series Forecasting
+Title: Empirical Time-Series Forecasting
+Subtitle: Forecasting based on actual observed video data
+- Time Windows: Aggregating crossings every 10 seconds
+- Algorithm: Holt's Damped Linear Trend
+- Damping Factor (φ = 0.85): Smooths predictions over time
+- Horizons: Predicts 1-min, 5-min, and 10-min future flow
+
+Slide 5: System Architecture
+Title: System Architecture
+Subtitle: Modern, modular, and performant backend
+- Python & Flask: Asynchronous video processing and REST APIs
+- SQLite Database: Isolated video sessions and historical metrics
+- Hardware Acceleration: PyTorch with CUDA for RTX GPUs
+- Frontend Integration: Dynamic JS fetching and Chart.js rendering
+
+Slide 6: Dashboard & UI Features
+Title: Dashboard & UI Features
+Subtitle: Single consolidated real-time analytics interface
+- Single AI Video Panel: Directly displays MJPEG stream
+- Dynamic Line Controls: Preset profiles (Highway/City) & Reverse toggle
+- Live Key Performance Indicators (KPIs): FPS, Model, Device
+- Visualizations: Time-series volume flow and vehicle class distributions
+
+Slide 7: Performance & Benchmarking
+Title: Performance & Benchmarking
+Subtitle: Reliable real-time operation
+- CUDA Acceleration: Achieving real-time inference speeds
+- Flexible Model Usage: Switch between Nano, Small, and Medium weights
+- Automated Benchmarking Script: Verifies FPS, latency, and counts
+- No Synthetic Generation: Strict reliance on true video processing

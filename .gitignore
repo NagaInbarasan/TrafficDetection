@@ -1,0 +1,39 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
+venv_cuda/
+.venv/
+env/
+ENV/
+
+# Model checkpoints & weights (auto-downloaded or large binary files)
+*.pt
+*.pth
+*.onnx
+*.weights
+*.h5
+*.pkl
+
+# Databases & local storage
+*.db
+*.sqlite3
+
+# Ultralytics & training runs
+runs/
+
+# Environment variables & credentials
+.env
+.env.*
+*.pem
+*.key
+secrets.json
+
+# IDEs and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

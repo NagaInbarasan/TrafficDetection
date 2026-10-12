@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRAFFIC FLOW AI — Pretrained Highway Vision & Forecasting</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-dark text-light">
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark bg-black border-bottom border-secondary px-3 py-2">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <a class="navbar-brand d-flex align-items-center fw-bold text-warning" href="#">
+                <i class="bi bi-camera-video-fill me-2 text-danger"></i> TRAFFIC FLOW AI
+                <span class="badge bg-secondary ms-2 fs-6" id="nav-status">● STOPPED</span>
+            </a>
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-dark border border-success text-success px-3 py-2 fs-6" id="nav-device">
+                    <i class="bi bi-gpu-card me-1"></i> Device: Detecting...
+                </span>
+                <span class="badge bg-dark border border-info text-info px-3 py-2 fs-6" id="nav-model">
+                    <i class="bi bi-cpu me-1"></i> Model: yolo26s.pt (960px)
+                </span>
+                <span class="badge bg-dark border border-light text-light px-3 py-2 fs-6" id="nav-fps">
+                    <i class="bi bi-speedometer2 me-1"></i> FPS: 0.0
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-3">
+        <!-- Control Toolbar -->
+        <div class="card bg-black border-secondary mb-3 shadow">
+            <div class="card-body py-2">
+                <div class="row g-2 align-items-center">
+                    <!-- File Upload -->
+                    <div class="col-md-3 d-flex gap-2">
+                        <input type="file" id="video-upload" class="form-control form-control-sm bg-dark text-light border-secondary" accept=".mp4,.avi,.mov,.mkv">
+                        <button id="btn-upload" class="btn btn-sm btn-outline-primary text-nowrap">
+                            <i class="bi bi-upload"></i> Upload
+                        </button>
+                    </div>
+
+                    <!-- Video Selector -->
+                    <div class="col-md-2">
+                        <select id="video-select" class="form-select form-select-sm bg-dark text-light border-secondary">
+                            <option value="highway.mp4">highway.mp4 (Sample)</option>
+                        </select>
+                    </div>
+
+                    <!-- Model Selector -->
+                    <div class="col-md-2">
+                        <select id="model-select" class="form-select form-select-sm bg-dark text-light border-secondary">
+                            <option value="yolo26s.pt" selected>YOLO26s (Default Balanced)</option>
+                            <option value="yolo26m.pt">YOLO26m (High Accuracy)</option>
+                            <option value="yolo26n.pt">YOLO26n (Ultra-Light)</option>
+                        </select>
+                    </div>
+
+                    <!-- Image Size Selector -->
+                    <div class="col-md-1">
+                        <select id="imgsz-select" class="form-select form-select-sm bg-dark text-light border-secondary">
+                            <option value="960" selected>960px</option>
+                            <option value="640">640px</option>
+                        </select>
+                    </div>
+
+                    <!-- Playback Action Buttons -->
+                    <div class="col-md-2 d-flex gap-2">
+                        <button id="btn-start" class="btn btn-sm btn-success flex-grow-1">
+                            <i class="bi bi-play-fill"></i> Start
+                        </button>
+                        <button id="btn-pause" class="btn btn-sm btn-warning">
+                            <i class="bi bi-pause-fill"></i> Pause
+                        </button>
+                        <button id="btn-stop" class="btn btn-sm btn-danger">
+                            <i class="bi bi-stop-fill"></i> Stop
+                        </button>
+                    </div>
+
+                    <!-- Video Progress -->
+                    <div class="col-md-2 text-end text-muted small">
+                        <div>Video: <span class="text-light fw-bold" id="video-name">highway.mp4</span></div>
+                        <div>Frame: <span id="frame-counter" class="text-warning">0</span> | <span id="video-time" class="text-info">0.0s</span> (<span id="ai-progress" class="text-light">0%</span>)</div>
+                    </div>
+                </div>
+
+                <!-- Counting Line Configuration Bar -->
+                <hr class="border-secondary my-2">
+                <div class="row g-2 align-items-center small">
+                    <div class="col-auto text-warning fw-bold">
+                        <i class="bi bi-bezier2 me-1"></i> Counting Line:
+                    </div>
+                    <div class="col-auto">
+                        <select id="line-preset-select" class="form-select form-select-sm bg-dark text-light border-secondary py-0">
+                            <option value="horizontal" selected>Horizontal Line (Center 50%)</option>
+                            <option value="horizontal_high">Horizontal Line (High 35%)</option>
+                            <option value="horizontal_low">Horizontal Line (Low 65%)</option>
+                            <option value="angled_down">Angled Diagonal (\ Down)</option>
+                            <option value="angled_up">Angled Diagonal (/ Up)</option>
+                            <option value="vertical">Vertical Road (| 50%)</option>
+                        </select>
+                    </div>
+                    <div class="col-auto d-flex align-items-center gap-2">
+                        <span>Y-Position:</span>
+                        <input type="range" class="form-range" id="line-y-slider" min="15" max="85" value="50" style="width: 140px;">
+                        <span id="slider-val" class="text-info">50%</span>
+                    </div>
+                    <div class="col-auto">
+                        <button id="btn-reverse-dir" class="btn btn-sm btn-outline-warning py-0">
+                            <i class="bi bi-arrow-left-right me-1"></i> Reverse Directions (A ⇄ B)
+                        </button>
+                    </div>
+                    <div class="col text-end">
+                        <span class="badge bg-secondary" id="active-line-info">Geometry: Standard Horizontal</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Stage -->
+        <div class="row g-3 mb-3">
+            <!-- Left: Single AI Video View -->
+            <div class="col-lg-8">
+                <div class="card bg-black border-secondary shadow h-100">
+                    <div class="card-header bg-dark border-secondary d-flex justify-content-between align-items-center py-2">
+                        <span class="fw-bold text-light">
+                            <i class="bi bi-broadcast me-2 text-danger"></i> LIVE AI ANNOTATED TRAFFIC STREAM
+                        </span>
+                        <span class="badge bg-dark border border-secondary text-secondary" id="stream-indicator">
+                            Pretrained YOLO26s + ByteTrack
+                        </span>
+                    </div>
+                    <div class="card-body p-0 d-flex align-items-center justify-content-center bg-black position-relative" style="min-height: 480px;">
+                        <!-- Prompt overlay when video is stopped or empty -->
+                        <div id="video-placeholder" class="text-center p-4">
+                            <i class="bi bi-camera-reels text-secondary" style="font-size: 4rem;"></i>
+                            <h5 class="text-light mt-3">Select or Upload a Real Traffic Video</h5>
+                            <p class="text-muted small">Real video footage is processed frame-by-frame with persistent tracking, geometric counting, and empirical forecasting.</p>
+                            <button id="btn-quick-start" class="btn btn-primary btn-sm px-4">
+                                <i class="bi bi-play-circle me-1"></i> Start highway.mp4
+                            </button>
+                        </div>
+
+                        <!-- Single Live Video Feed -->
+                        <img id="ai-video" src="" alt="Live AI Stream" class="w-100 d-none" style="max-height: 75vh; object-fit: contain;">
+
+                        <!-- Error Banner (if video fails to open) -->
+                        <div id="video-error-box" class="alert alert-danger position-absolute m-3 d-none shadow" style="top: 10px; left: 10px; right: 10px;">
+                            <h6 class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill me-2"></i> VIDEO ERROR</h6>
+                            <div id="video-error-text" class="small"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Live KPIs, Directional Counts & Forecasting -->
+            <div class="col-lg-4 d-flex flex-column gap-3">
+                <!-- Detection & Performance KPIs -->
+                <div class="card bg-black border-secondary shadow">
+                    <div class="card-header bg-dark border-secondary py-1 text-light small fw-bold">
+                        <i class="bi bi-activity me-1 text-info"></i> DETECTION & INFERENCE METRICS
+                    </div>
+                    <div class="card-body py-2">
+                        <div class="row text-center g-2">
+                            <div class="col-4">
+                                <div class="p-2 bg-dark rounded border border-secondary">
+                                    <div class="text-muted small">Visible</div>
+                                    <div class="fs-4 fw-bold text-warning" id="kpi-visible">0</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-2 bg-dark rounded border border-secondary">
+                                    <div class="text-muted small">Tracked</div>
+                                    <div class="fs-4 fw-bold text-info" id="kpi-tracked">0</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-2 bg-dark rounded border border-secondary">
+                                    <div class="text-muted small">Latency</div>
+                                    <div class="fs-4 fw-bold text-success" id="kpi-latency">0.0<span class="fs-6">ms</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bidirectional Counts Table -->
+                <div class="card bg-black border-secondary shadow">
+                    <div class="card-header bg-dark border-secondary py-1 text-light small fw-bold d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-signpost-split me-1 text-warning"></i> BIDIRECTIONAL HIGHWAY COUNTS</span>
+                        <span class="badge bg-primary" id="kpi-total-crossings">0 Crossings</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-dark table-sm table-bordered text-center mb-0 small">
+                            <thead class="table-secondary text-dark">
+                                <tr>
+                                    <th>Class</th>
+                                    <th class="text-success"><span id="lbl-dir-a">DIRECTION A ↑</span></th>
+                                    <th class="text-info"><span id="lbl-dir-b">DIRECTION B ↓</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="fw-bold fs-6">
+                                    <td>Total</td>
+                                    <td class="text-success" id="dir_a_total">0</td>
+                                    <td class="text-info" id="dir_b_total">0</td>
+                                </tr>
+                                <tr>
+                                    <td>Cars</td>
+                                    <td id="dir_a_car">0</td>
+                                    <td id="dir_b_car">0</td>
+                                </tr>
+                                <tr>
+                                    <td>Motorcycles</td>
+                                    <td id="dir_a_motorcycle">0</td>
+                                    <td id="dir_b_motorcycle">0</td>
+                                </tr>
+                                <tr>
+                                    <td>Buses</td>
+                                    <td id="dir_a_bus">0</td>
+                                    <td id="dir_b_bus">0</td>
+                                </tr>
+                                <tr>
+                                    <td>Trucks</td>
+                                    <td id="dir_a_truck">0</td>
+                                    <td id="dir_b_truck">0</td>
+                                </tr>
+                                <tr>
+                                    <td>Bicycles</td>
+                                    <td id="dir_a_bicycle">0</td>
+                                    <td id="dir_b_bicycle">0</td>
+                                </tr>
+                                <tr class="table-active">
+                                    <td>Flow Rate</td>
+                                    <td id="dir_a_flow">0.0 /min</td>
+                                    <td id="dir_b_flow">0.0 /min</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Empirical Forecasting Service Card -->
+                <div class="card bg-black border-secondary shadow">
+                    <div class="card-header bg-dark border-secondary py-1 text-light small fw-bold d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-graph-up-arrow me-1 text-primary"></i> TRAFFIC FLOW FORECAST</span>
+                        <span class="badge bg-warning text-dark" id="forecast-status-badge">Preliminary</span>
+                    </div>
+                    <div class="card-body py-2">
+                        <div class="row g-2 text-center mb-2">
+                            <div class="col-4">
+                                <div class="p-1 bg-dark rounded border border-secondary">
+                                    <div class="text-muted small">Next 1 min</div>
+                                    <div class="fs-5 fw-bold text-light" id="fc-1min">0</div>
+                                    <div class="small text-muted" id="fc-1min-split">A:0 | B:0</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-1 bg-dark rounded border border-secondary">
+                                    <div class="text-muted small">Next 5 min</div>
+                                    <div class="fs-5 fw-bold text-light" id="fc-5min">0</div>
+                                    <div class="small text-muted" id="fc-5min-split">A:0 | B:0</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-1 bg-dark rounded border border-secondary">
+                                    <div class="text-muted small">Next 10 min</div>
+                                    <div class="fs-5 fw-bold text-light" id="fc-10min">0</div>
+                                    <div class="small text-muted" id="fc-10min-split">A:0 | B:0</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center small mb-1">
+                            <span>Trend Momentum:</span>
+                            <span class="badge bg-info text-dark" id="fc-trend">Stable →</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center small mb-1">
+                            <span>Confidence Level:</span>
+                            <span class="fw-bold text-warning" id="fc-confidence">Low (Short observation)</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center small mb-2">
+                            <span>Baseline MAE:</span>
+                            <span class="text-muted" id="fc-mae">Collecting history...</span>
+                        </div>
+
+                        <div class="alert alert-dark border-secondary p-2 mb-0 small text-muted" style="font-size: 0.75rem;">
+                            <i class="bi bi-info-circle me-1 text-info"></i>
+                            <span id="fc-explanation">Observed time-series projection (Holt's damped trend). Forecasts are empirical estimates based on video history, not real-world road guarantees.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Congestion & Relative Speed -->
+                <div class="card bg-black border-secondary shadow">
+                    <div class="card-header bg-dark border-secondary py-1 text-light small fw-bold">
+                        <i class="bi bi-cone-striped me-1 text-warning"></i> ROAD OCCUPANCY & CONGESTION
+                    </div>
+                    <div class="card-body py-2">
+                        <div class="row align-items-center">
+                            <div class="col-6 text-center border-end border-secondary">
+                                <div class="text-muted small">Congestion Level</div>
+                                <span class="badge bg-success fs-5 px-3 py-1 mt-1" id="kpi-congestion">LOW</span>
+                            </div>
+                            <div class="col-6 ps-3 small">
+                                <div class="mb-1">Occupancy Proxy: <span class="fw-bold text-warning" id="kpi-occupancy">0.0%</span></div>
+                                <div class="mb-1">Relative Speed: <span class="fw-bold text-info" id="kpi-speed">0.0 px/s</span></div>
+                                <div class="text-muted" style="font-size: 0.7rem;">(Uncalibrated relative proxy)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real Time-Series Charts -->
+        <div class="row g-3 mb-3">
+            <div class="col-lg-8">
+                <div class="card bg-black border-secondary shadow">
+                    <div class="card-header bg-dark border-secondary py-2 d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-light small">
+                            <i class="bi bi-graph-up me-1 text-info"></i> TIME-SERIES: DIRECTION A vs DIRECTION B (Source-Video Time)
+                        </span>
+                        <span class="badge bg-dark border border-secondary text-muted">10-Second Windows</span>
+                    </div>
+                    <div class="card-body" style="height: 260px;">
+                        <canvas id="trafficFlowChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card bg-black border-secondary shadow">
+                    <div class="card-header bg-dark border-secondary py-2">
+                        <span class="fw-bold text-light small">
+                            <i class="bi bi-pie-chart-fill me-1 text-warning"></i> VEHICLE CLASS DISTRIBUTION
+                        </span>
+                    </div>
+                    <div class="card-body d-flex align-items-center justify-content-center" style="height: 260px;">
+                        <canvas id="classDistChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Simulated Sensor Panel (Explicitly Stamped to avoid confusion) -->
+        <div class="row g-3">
+            <div class="col-12">
+                <div class="card bg-black border-secondary shadow">
+                    <div class="card-header bg-dark border-secondary py-1 d-flex justify-content-between align-items-center">
+                        <span class="fw-bold text-warning small">
+                            <i class="bi bi-broadcast-pin me-1"></i> [SIMULATED SENSOR — FOR TESTING ONLY]
+                        </span>
+                        <span class="badge bg-secondary">Synthetic Hardware Stub (Completely Isolated from Camera AI)</span>
+                    </div>
+                    <div class="card-body py-2">
+                        <div class="row text-center small text-muted g-2">
+                            <div class="col-md-3">Sensor Name: <span class="text-light fw-bold" id="sim-sensor-name">sim_sensor_1</span></div>
+                            <div class="col-md-3">Simulated Count: <span class="text-light fw-bold" id="sim-sensor-count">0</span></div>
+                            <div class="col-md-3">Simulated Speed: <span class="text-light fw-bold" id="sim-sensor-speed">0.0 km/h</span></div>
+                            <div class="col-md-3">Simulated Density: <span class="text-light fw-bold" id="sim-sensor-density">0.0%</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/charts.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
